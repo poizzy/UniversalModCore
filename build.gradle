@@ -113,6 +113,7 @@ minecraft {
 
 repositories {
     mavenCentral()
+    maven { url = "https://teamopenindustry.cc/maven" }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -145,6 +146,9 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.2'
 
     shade group: 'org.lz4', name: 'lz4-java', version: '1.7.1'
+
+    implementation fg.deobf("trackapi:TrackAPI:1.20.1-forge-1.2")
+    implementation files('libs/ImmersiveRailroading-1.20.1-forge-1.10.0-9c488ef.jar')
 }
 
 jar {
