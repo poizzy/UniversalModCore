@@ -38,10 +38,12 @@ public class GUIHelpers {
 
     /** Draw a full image (tex) at coords with given width/height */
     public static void texturedRect(Identifier tex, int x, int y, int width, int height) {
-        try (With ctx = RenderContext.apply(
-                new RenderState().texture(Texture.wrap(tex))
-        )) {
-            Gui.drawScaledCustomSizeModalRect(x, y, 0, 0, 1, 1, width, height, 1, 1);
+        texturedRect(tex, x, y, 0, 0, 1, 1, width, height, 1, 1);
+    }
+
+    public static void texturedRect(Identifier tex, int x, int y, int u, int v, int uWith, int vHeight, int width, int height, int tileWidth, int tileHeight) {
+        try (With ctx = RenderContext.apply(new RenderState().texture(Texture.wrap(tex)))) {
+            Gui.drawScaledCustomSizeModalRect(x, y, u, v, uWith, vHeight, width, height, tileWidth, tileHeight);
         }
     }
 
