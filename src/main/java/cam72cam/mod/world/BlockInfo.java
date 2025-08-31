@@ -1,8 +1,10 @@
 package cam72cam.mod.world;
 
+import cam72cam.mod.block.BlockType;
 import cam72cam.mod.serialization.TagCompound;
 import cam72cam.mod.serialization.TagField;
 import cam72cam.mod.serialization.TagMapped;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
@@ -14,6 +16,14 @@ public class BlockInfo {
 
     BlockInfo(IBlockState state) {
         this.internal = state;
+    }
+
+    public BlockType getBlock() {
+        Block block = internal.getBlock();
+        if (block instanceof BlockType.BlockInternal) {
+            return ((BlockType.BlockInternal) block).getType();
+        }
+        return null;
     }
 
     public static class TagMapper implements cam72cam.mod.serialization.TagMapper<BlockInfo> {
