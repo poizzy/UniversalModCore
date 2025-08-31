@@ -20,6 +20,24 @@ public class CreativeTab {
         };
     }
 
+    public CreativeTab(String label, Supplier<ItemStack> stack, boolean hasSearchBar) {
+        internal = new CreativeTabs(label) {
+            @Override
+            public net.minecraft.item.ItemStack createIcon() {
+                return stack.get().internal;
+            }
+
+            @Override
+            public boolean hasSearchBar() {
+                return hasSearchBar;
+            }
+        };
+
+        if (hasSearchBar) {
+            internal.setBackgroundImageName("item_search.png");
+        }
+    }
+
     /** Wraps minecraft's tabs, don't use directly */
     public CreativeTab(CreativeTabs tab) {
         this.internal = tab;
