@@ -1,7 +1,6 @@
-package cam72cam.mod.model.common;
+package cam72cam.mod.model.obj;
 
 import cam72cam.mod.math.Vec3d;
-import cam72cam.mod.model.obj.*;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
@@ -10,30 +9,30 @@ import java.util.NoSuchElementException;
 
 //VertexBuffer wrapper, try to make it painless to migrate to EBO
 public class FaceAccessor implements Iterable<FaceAccessor> {
-    public static final HashMap<Integer, VertexBuffer> vbos = new HashMap<>();
+    private static final HashMap<String, VertexBuffer> vbos = new HashMap<>();
 
     public final OBJModel model;
-    private final VertexBuffer vbo;
     public VertexAccessor v0;
     public VertexAccessor v1;
     public VertexAccessor v2;
 
+    private final VertexBuffer vbo;
     private final boolean canSplit;
     private int currentFaceIndex;
     private final int startFace;
     private final int endFace;
 
-    public FaceAccessor(OBJModel model) {
+    protected FaceAccessor(OBJModel model) {
         this(model, 0, Integer.MAX_VALUE);
     }
 
-    public FaceAccessor(OBJModel model, int startFace, int endFace) {
+    protected FaceAccessor(OBJModel model, int startFace, int endFace) {
         this(model, startFace, endFace, true);
     }
 
-    public FaceAccessor(OBJModel model, int startFace, int endFace, boolean canSplit) {
+    protected FaceAccessor(OBJModel model, int startFace, int endFace, boolean canSplit) {
         this.model = model;
-        this.vbo = vbos.computeIfAbsent(model.hashCode(), i -> model.vbo.buffer.get());
+        this.vbo = vbos.computeIfAbsent(model.hash, i -> model.vbo.buffer.get());
         int faceCount = this.vbo.data.length / this.vbo.stride / this.vbo.vertsPerFace;
         v0 = new VertexAccessor(0);
         v1 = new VertexAccessor(1);
@@ -75,7 +74,8 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
     }
 
     /**
-     * Don't store data in loop! This is a tricky hack to make it work with for-each
+     * Don't store data in loop! This is a tricky hack to make it work with for-each.<br>
+     * If you really want to please use asOBJFace
      * @return Iterator of self, only recommend to use in for-each
      */
     @Override

@@ -3,7 +3,6 @@ package cam72cam.mod.model.obj;
 import cam72cam.mod.Config;
 import cam72cam.mod.ModCore;
 import cam72cam.mod.math.Vec3d;
-import cam72cam.mod.model.common.FaceAccessor;
 import cam72cam.mod.render.obj.OBJTextureSheet;
 import cam72cam.mod.render.obj.OBJRender;
 import cam72cam.mod.render.opengl.CustomTexture;
@@ -37,8 +36,6 @@ public class OBJModel {
     public final boolean isSmoothShading;
 
     public String hash;
-
-    private FaceAccessor faces;
 
     public OBJModel(Identifier modelLoc, float darken) throws Exception {
         this(modelLoc, darken, 1, null, 30, null);
@@ -183,10 +180,7 @@ public class OBJModel {
     }
 
     public FaceAccessor getFaceAccessor() {
-        if(faces == null) {
-            faces = new FaceAccessor(this);
-        }
-        return faces;
+        return new FaceAccessor(this);
     }
 
     public Vec3d minOfGroup(Iterable<String> groupNames) {
