@@ -135,60 +135,60 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
         }
 
         public float x() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride];
         }
 
         public float y() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 1];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 1];
         }
 
         public float z() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 2];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 2];
         }
 
         public float u() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 3];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 3];
         }
 
         public float v() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 4];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 4];
         }
 
         public float r() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 5];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 5];
         }
 
         public float g() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 6];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 6];
         }
 
         public float b() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 7];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 7];
         }
 
         public float a() {
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 8];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 8];
         }
 
         public float nx() {
             if (!vbo.hasNormals) {
                 return 0;
             }
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 9];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 9];
         }
 
         public float ny() {
             if (!vbo.hasNormals) {
                 return 0;
             }
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 10];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 10];
         }
 
         public float nz() {
             if (!vbo.hasNormals) {
                 return 0;
             }
-            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + vertOffset + 11];
+            return vbo.data[(currentFaceIndex * 3 + vertOffset) * vbo.stride + 11];
         }
     }
 }
