@@ -7,11 +7,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-//VertexBuffer wrapper, try to make it painless to migrate to EBO
+/**
+ * A {@link VertexBuffer} API wrapper, make accessing geometry complete separate from backend.
+ */
 public class FaceAccessor implements Iterable<FaceAccessor> {
+    // Cache VBOs to avoid costly re-fetching, even if they are removed it won't cause too much waste(1-2 MB)
     private static final HashMap<String, VertexBuffer> vbos = new HashMap<>();
+    private final OBJModel model;
 
-    public final OBJModel model;
+    /**
+     * Current face's vertex accessors, assuming all faces are triangles.
+     */
     public VertexAccessor v0;
     public VertexAccessor v1;
     public VertexAccessor v2;
@@ -22,6 +28,9 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
     private final int startFace;
     private final int endFace;
 
+    /**
+     * Internal, use OBJModel.getFaceAccessor
+     */
     protected FaceAccessor(OBJModel model) {
         this(model, 0, Integer.MAX_VALUE);
     }
@@ -46,6 +55,11 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
         this.canSplit = canSplit;
     }
 
+    /**
+     * Get another {@link FaceAccessor} of certain group.
+     * @param groupName Desired group's name
+     * @return A {@link FaceAccessor} of given group, or {@code null} if group not present or this FaceAccessor is already grouped
+     */
     public FaceAccessor getSubByGroup(String groupName) {
         if (!model.groups.containsKey(groupName) || !canSplit) {
             return null;
@@ -54,6 +68,10 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
         return new FaceAccessor(model, group.faceStart, group.faceStop + 1, false);
     }
 
+    /**
+     * Convert current accessing face into an {@link OBJFace}.
+     * @return OBJFace of current face
+     */
     public OBJFace asOBJFace() {
         OBJFace face = new OBJFace();
         face.vertices.add(v0.posAsVec3d());
@@ -74,8 +92,7 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
     }
 
     /**
-     * Don't store data in loop! This is a tricky hack to make it work with for-each.<br>
-     * If you really want to please use asOBJFace
+     * An iterator designed specifically for for-each loop, use {@code asOBJFace} to create snapshot if you want to store it externally.
      * @return Iterator of self, only recommend to use in for-each
      */
     @Override
@@ -112,10 +129,15 @@ public class FaceAccessor implements Iterable<FaceAccessor> {
         }
     }
 
+    /**
+     * Vertex data accessor. Provides typed access to vertex attributes.
+     * <br>
+     * Use snapshot methods (posAsVec3d, etc.) to store data externally.
+     */
     public class VertexAccessor {
         public final int vertOffset;
 
-        public VertexAccessor(int vertOffset) {
+        protected VertexAccessor(int vertOffset) {
             this.vertOffset = vertOffset;
         }
 
