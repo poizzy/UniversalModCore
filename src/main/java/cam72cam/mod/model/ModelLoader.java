@@ -17,15 +17,11 @@ import org.lwjgl.assimp.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import static org.lwjgl.assimp.Assimp.*;
 
@@ -96,23 +92,19 @@ public final class ModelLoader {
                 | aiProcess_ImproveCacheLocality
                 | aiProcess_OptimizeMeshes
                 | aiProcess_OptimizeGraph
-                | aiProcess_PreTransformVertices // we still apply matrices below, but this helps flatten odd cases
+                | aiProcess_PreTransformVertices
                 | aiProcess_RemoveRedundantMaterials
                 | aiProcess_SortByPType
                 | aiProcess_FixInfacingNormals;
     }
 
-    // ---------- Scene → Mesh conversion ----------
-
     private static List<Mesh> convertScene(AIScene scene, Identifier sourceId) {
         List<Mesh> out = new ArrayList<>();
         Matrix4 root = new Matrix4().setIdentity();
 
-        // Use the scene’s root node; if multiple, they’re children of root
         AINode rootNode = scene.mRootNode();
         if (rootNode == null) return out;
 
-        // For texture base directory (external files)
         Identifier baseDir = deriveBaseDir(sourceId);
 
         visitNode(scene, rootNode, root, baseDir, out);
@@ -124,10 +116,9 @@ public final class ModelLoader {
         Matrix4 local = fromAiMatrix(node.mTransformation());
         Matrix4 world = parentWorld.copy().multiply(local);
 
-        // Convert meshes at this node
         int numMeshes = node.mNumMeshes();
         if (numMeshes > 0) {
-            IntBuffer meshIndices = node.mMeshes(); // indices into scene.mMeshes()
+            IntBuffer meshIndices = node.mMeshes();
             for (int i = 0; i < numMeshes; i++) {
                 int meshIdx = meshIndices.get(i);
                 AIMesh aiMesh = AIMesh.create(scene.mMeshes().get(meshIdx));
@@ -135,7 +126,6 @@ public final class ModelLoader {
             }
         }
 
-        // Recurse children
         int numChildren = node.mNumChildren();
         PointerBuffer children = node.mChildren();
         for (int i = 0; i < numChildren; i++) {
@@ -152,20 +142,16 @@ public final class ModelLoader {
         AIVector3D.Buffer aiTan = m.mTangents();
         AIVector3D.Buffer aiBit = m.mBitangents();
 
-        // Assimp supports up to AI_MAX_NUMBER_OF_TEXTURECOORDS (8); we use channel 0 if present
         AIVector3D.Buffer aiUV0 = (m.mTextureCoords(0) != null) ? m.mTextureCoords(0) : null;
 
-        // Build vertex list
         List<Mesh.Vertex> verts = new ArrayList<>(Math.max(0, vcount));
         for (int i = 0; i < vcount; i++) {
             Mesh.Vertex v = new Mesh.Vertex();
 
-            // position
             AIVector3D p = aiPos.get(i);
             Vec3d wp = world.apply(new Vec3d(p.x(), p.y(), p.z()));
             v.position = wp;
 
-            // normal (upper-left 3x3 then normalize)
             if (aiNrm != null) {
                 AIVector3D n = aiNrm.get(i);
                 double x = world.m00 * n.x() + world.m01 * n.y() + world.m02 * n.z();
@@ -176,14 +162,11 @@ public final class ModelLoader {
                 v.normal = new Vec3d(x, y, z);
             }
 
-            // uv0 (Assimp stores vec3; ignore z)
             if (aiUV0 != null) {
                 AIVector3D uv = aiUV0.get(i);
-                // If your textures look upside down, flip V: new Vec2f(uv.x(), 1.0f - uv.y())
                 v.uv = new Vec2f(uv.x(),  1f - uv.y());
             }
 
-            // tangent/bitangent
             if (aiTan != null) {
                 AIVector3D t = aiTan.get(i);
                 double x = world.m00 * t.x() + world.m01 * t.y() + world.m02 * t.z();
@@ -198,7 +181,6 @@ public final class ModelLoader {
                     double bz = world.m20 * b.x() + world.m21 * b.y() + world.m22 * b.z();
                     v.bitangent = new Vec3d(bx, by, bz);
                 } else if (v.normal != null) {
-                    // Rebuild bitangent if missing: b = n × t
                     var n = v.normal; var tvec = v.tangent;
                     v.bitangent = new Vec3d(
                             n.y * tvec.z - n.z * tvec.y,
@@ -212,14 +194,13 @@ public final class ModelLoader {
             verts.add(v);
         }
 
-        // Indices (faces are triangles due to aiProcess_Triangulate)
         int faceCount = m.mNumFaces();
         int[] indices = new int[faceCount * 3];
         AIFace.Buffer faces = m.mFaces();
         int w = 0;
         for (int i = 0; i < faceCount; i++) {
             AIFace f = faces.get(i);
-            if (f.mNumIndices() != 3) continue; // be safe
+            if (f.mNumIndices() != 3) continue;
             indices[w++] = f.mIndices().get(0);
             indices[w++] = f.mIndices().get(1);
             indices[w++] = f.mIndices().get(2);
@@ -230,20 +211,16 @@ public final class ModelLoader {
             indices = trimmed;
         }
 
-        // Material → textures (diffuse/albedo, normal, specular, height)
         List<Mesh.Texture> texList = new ArrayList<>();
         int matIndex = m.mMaterialIndex();
         if (matIndex >= 0 && scene.mMaterials() != null && matIndex < scene.mMaterials().remaining()) {
             AIMaterial mat = AIMaterial.create(scene.mMaterials().get(matIndex));
 
-            // Diffuse / base color
             extractMaterialTextures(mat, aiTextureType_DIFFUSE, "texture_diffuse", baseDir, scene, texList);
 
-            // Normal map
             extractMaterialTextures(mat, aiTextureType_NORMALS, "texture_normal", baseDir, scene, texList);
-            extractMaterialTextures(mat, aiTextureType_HEIGHT, "texture_height", baseDir, scene, texList); // often bump
+            extractMaterialTextures(mat, aiTextureType_HEIGHT, "texture_height", baseDir, scene, texList);
 
-            // Specular
             extractMaterialTextures(mat, aiTextureType_SPECULAR, "texture_specular", baseDir, scene, texList);
         }
 
@@ -275,8 +252,6 @@ public final class ModelLoader {
 
                 tex.lazy = TexIO.fromEmbedded(aiTex);
             } else {
-                // External file
-                // Hook into your file-path loader
                 tex.lazy = TexIO.prepareLazy(baseDir, texPath);
             }
 
@@ -286,11 +261,8 @@ public final class ModelLoader {
 
 
 
-    // ---------- Helpers ----------
 
     private static Matrix4 fromAiMatrix(AIMatrix4x4 a) {
-        // Assimp is row-major; your Matrix4 ctor appears to be (m00 m01 m02 m03; ...)
-        // Map directly: a.a1..a4 is first row, etc.
         return new Matrix4(
                 a.a1(), a.a2(), a.a3(), a.a4(),
                 a.b1(), a.b2(), a.b3(), a.b4(),
@@ -300,8 +272,6 @@ public final class ModelLoader {
     }
 
     private static Identifier deriveBaseDir(Identifier source) {
-        // Implement according to your Identifier API.
-        // Fallback: return the same id; your TexIO can decide how to resolve relative paths.
         return source.getBaseDir();
     }
 
@@ -316,7 +286,6 @@ public final class ModelLoader {
         File tempDir = new File(gameDir, "temp/" + UUID.randomUUID());
         tempDir.mkdirs();
 
-        // Try default resource locations (Resource Packs / Jar)
         for (Map.Entry<ResourceLocation, Resource> resources : siblings.entrySet()) {
             File loc = new File(tempDir, String.format("assets/%s/%s", resources.getKey().getNamespace(), resources.getKey().getPath()));
             loc.getParentFile().mkdirs();
@@ -328,93 +297,6 @@ public final class ModelLoader {
         }
 
         return new TempFile(new File(tempDir, String.format("assets/%s/%s", id.getDomain(), id.getPath())), tempDir);
-    }
-
-    private static File getFromConfigDir(Identifier path) {
-        File temp = new File(FMLPaths.GAMEDIR.get().toFile(), "temp");
-        temp.mkdirs();
-
-        File unziped;
-        if ((unziped = new File(temp, String.format("assets/%s/%s", path.getDomain(), path.getPath()))).exists()) {
-            return unziped;
-        }
-
-        try {
-            return unzip(path, temp);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static File unzip(Identifier path, File tempDir) throws IOException {
-        File config = FMLPaths.CONFIGDIR.get().toFile();
-        config.mkdirs();
-
-        File folder = new File(config + File.separator + path.getDomain());
-        if (folder.exists()) {
-            if (folder.isDirectory()) {
-                File[] files = folder.listFiles(((dir, name) -> name.endsWith(".zip")));
-                for (File file : files) {
-                    byte[] buffer = new byte[1024];
-                    ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
-                    ZipEntry zipEntry = zis.getNextEntry();
-                    while (zipEntry != null) {
-                        File newFile = newFile(tempDir, zipEntry);
-                        if (zipEntry.isDirectory()) {
-                            if (!newFile.isDirectory() && !newFile.mkdirs()) {
-                                throw new IOException("Failed to create directory " + newFile);
-                            }
-                        } else {
-                                File parent = newFile.getParentFile();
-                                if (!parent.isDirectory() && parent.mkdirs()) {
-                                    throw new IOException("Failed to create directory " + newFile);
-                                }
-
-                                FileOutputStream fos = new FileOutputStream(newFile);
-                                int len;
-                                while ((len = zis.read(buffer)) > 0) {
-                                    fos.write(buffer, 0, len);
-                                }
-                                fos.close();
-                            }
-                            zipEntry = zis.getNextEntry();
-                        }
-                    }
-                File[] folders = folder.listFiles(((dir, name) -> true));
-                for (File dir : folders) {
-                    Files.walk(dir.toPath()).forEach(source -> {
-                        Path destinaton = Paths.get(tempDir.toString(), source.toString().substring(tempDir.toString().length()));
-                        try {
-                            Files.copy(source, destinaton);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-                }
-            }
-        } else {
-            folder.mkdirs();
-        }
-
-        File unziped;
-        if ((unziped = new File(tempDir, String.format("assets/%s/%s", path.getDomain(), path.getDomain()))).exists()) {
-            return unziped;
-        }
-        return null;
-    }
-
-    private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
-        File destFile = new File(destinationDir, zipEntry.getName());
-
-        String destDirPath = destinationDir.getCanonicalPath();
-        String destFilePath = destFile.getCanonicalPath();
-
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
-        }
-
-        return destFile;
     }
 
     private static ByteBuffer readAllBytes(Identifier id) throws IOException {
