@@ -7,6 +7,9 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 
@@ -51,6 +54,48 @@ public class Identifier {
 
     public String getPath() {
         return internal.getPath();
+    }
+
+    public Identifier getBaseDir() {
+        String path = getPath();
+        int i = path.lastIndexOf('/');
+        String basePath = (i >= 0) ? path.substring(0, i + 1) : "";
+        return new Identifier(getDomain(), basePath);
+    }
+
+    public Identifier resolve(String uri) {
+        if (uri.indexOf(':') > 0 && !uri.startsWith("data:")) {
+            int c = uri.indexOf(':');
+            String ns = uri.substring(0, c);
+            String p  = uri.substring(c + 1);
+            return new Identifier(ns, p).normalize();
+        }
+        String ns = getDomain();
+        if (uri.startsWith("/")) {
+            return new Identifier(ns, uri.substring(1)).normalize();
+        }
+        String basePath = getPath();
+        String combined = basePath + uri;
+        return new Identifier(ns, combined).normalize();
+    }
+
+    public Identifier normalize() {
+        String[] parts = getDomain().split("/");
+        Deque<String> stack = new ArrayDeque<>();
+        for (String part : parts) {
+            if (part.isEmpty() || ".".equals(part)) continue;
+            if ("..".equals(part)) {
+                if (!stack.isEmpty()) stack.removeLast();
+                continue;
+            }
+            stack.addLast(part);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String s : stack) {
+            if (sb.length() > 0) sb.append('/');
+            sb.append(s);
+        }
+        return new Identifier(getDomain(), sb.toString());
     }
 
     /**

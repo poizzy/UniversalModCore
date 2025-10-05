@@ -24,4 +24,7 @@ public class Config {
 
     @ConfigFile.Comment("Enable threaded texture loading")
     public static boolean ThreadedTextureLoading = true;
+
+    @ConfigFile.Comment("Don't delete the temp folder after loading")
+    public static boolean PersistentTempFolder = false;
 }

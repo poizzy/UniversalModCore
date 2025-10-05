@@ -450,6 +450,11 @@ public class Matrix4
 	}
 	*/
 
+	public FloatBuffer get(FloatBuffer in) {
+		in.put((float) m00).put((float) m01).put((float) m02).put((float)m03).put((float) m10).put((float) m11).put((float) m12).put((float) m13).put((float) m20).put((float) m21).put((float) m22).put((float) m23).put((float) m30).put((float) m31).put((float) m32).put((float)m33);
+		return in;
+	}
+
 	public Matrix4f toMatrix4f()
 	{
 		return new Matrix4f(new float[] {(float)m00,(float)m01,(float)m02,(float)m03, (float)m10,(float)m11,(float)m12,(float)m13, (float)m20,(float)m21,(float)m22,(float)m23, (float)m30,(float)m31,(float)m32,(float)m33});

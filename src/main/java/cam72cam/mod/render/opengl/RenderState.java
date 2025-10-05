@@ -219,6 +219,7 @@ public class RenderState {
         this.lightmap = new float[] {block, sky};
         return this;
     }
+
     public RenderState blend(BlendMode blend) {
         this.blend = blend;
         return this;

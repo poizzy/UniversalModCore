@@ -1,18 +1,24 @@
 package cam72cam.mod.render;
 
+import cam72cam.mod.MinecraftClient;
 import cam72cam.mod.entity.Entity;
 import cam72cam.mod.entity.EntityRegistry;
 import cam72cam.mod.entity.ModdedEntity;
 import cam72cam.mod.entity.SeatEntity;
 import cam72cam.mod.event.ClientEvents;
+import cam72cam.mod.render.opengl.Lightmap;
 import cam72cam.mod.render.opengl.RenderState;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -125,16 +131,20 @@ public class EntityRenderer<T extends ModdedEntity> extends net.minecraft.client
     }*/
 
     @Override
-    public void render(T stock, float entityYaw, float partialTicks, PoseStack p_225623_4_, MultiBufferSource p_225623_5_, int i) {
+    public void render(T stock, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource p_225623_5_, int i) {
         Entity self = stock.getSelf();
 
         RenderType.cutout().setupRenderState();
 
         //TODO bork 1.17.1? RenderHelper.turnBackOn();
 
-        int j = i % 65536;
-        int k = i / 65536;
-        RenderState state = new RenderState(p_225623_4_).lightmap(j / 240f, k / 240f);
+        int j = i & '\uffff';
+        int k = i >> 16 & '\uffff';
+
+        int block = (j >> 4) & 0xF;
+        int sky = (k >> 4) & 0xF;
+
+        RenderState state = new RenderState(poseStack).lightmap(block / 15f, sky / 15f);
         state.rotate(180 - entityYaw, 0, 1, 0);
         state.rotate(self.getRotationPitch(), 1, 0, 0);
         state.rotate(-90, 0, 1, 0);

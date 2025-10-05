@@ -9,10 +9,7 @@ import cam72cam.mod.render.BlockRender;
 import cam72cam.mod.math.Vec3d;
 import cam72cam.mod.render.EntityRenderer;
 import cam72cam.mod.render.GlobalRender;
-import cam72cam.mod.render.opengl.CustomTexture;
-import cam72cam.mod.render.opengl.RenderContext;
-import cam72cam.mod.render.opengl.RenderState;
-import cam72cam.mod.render.opengl.VBO;
+import cam72cam.mod.render.opengl.*;
 import cam72cam.mod.sound.Audio;
 import cam72cam.mod.world.World;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -121,6 +118,8 @@ public class ClientEvents {
             if (event.phase == TickEvent.Phase.END) {
                 TICK_POST.execute(Runnable::run);
             }
+
+            Lightmap.getInstance().tick();
         }
 
         private static void onGuiMouse(ScreenEvent event, int x, int y, int btn, MouseAction action) {
@@ -243,6 +242,11 @@ public class ClientEvents {
         public static void optifineSucksEvent(RenderLevelStageEvent event) {
             if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
                 OPTIFINE_SUCKS.execute(x -> x.accept(event));
+            }
+
+            var mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                Lightmap.getInstance().updateLightmap(mc.level, event.getPartialTick());
             }
         }
 

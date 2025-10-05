@@ -118,6 +118,13 @@ repositories {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+def lwjglVersion = "3.3.1"
+def os = org.gradle.internal.os.OperatingSystem.current()
+def lwjglNatives =
+        os.isWindows() ? "natives-windows" :
+                (os.isLinux() ? "natives-linux" :
+                        (os.isMacOsX() ? "natives-macos" : "natives-linux"))
+
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.1.46'
     // you may put jars on which you depend on in ./libs
@@ -141,14 +148,29 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
+    shade("org.lwjgl:lwjgl-assimp:3.3.1") {
+        exclude group: "org.lwjgl", module: "lwjgl"
+        exclude group: "org.lwjgl", module: "lwjgl-system"
+    }
+    shade("org.lwjgl:lwjgl-assimp:3.3.1:natives-windows") {
+        exclude group: "org.lwjgl", module: "lwjgl"
+        exclude group: "org.lwjgl", module: "lwjgl-system"
+    }
+    // TODO: Shade other assimp natives
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-windows-x86"
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-windows-arm64"
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-linux"
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-linux-arm32"
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-linux-arm64"
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-macos"
+    // shade "org.lwjgl:lwjgl-assimp:3.3.1:natives-macos-arm64"
+
+
     shade group: 'javax.vecmath', name: 'vecmath', version: '1.5.2'
     //testImplementation ('junit:junit:4.13')
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.2'
 
     shade group: 'org.lz4', name: 'lz4-java', version: '1.7.1'
-
-    implementation fg.deobf("trackapi:TrackAPI:1.20.1-forge-1.2")
-    implementation files('libs/ImmersiveRailroading-1.20.1-forge-1.10.0-9c488ef.jar')
 }
 
 jar {
@@ -169,9 +191,21 @@ jar {
 shadowJar {
     archiveClassifier = ''
     configurations = [project.configurations.shade]
+    exclude 'META-INF/versions/**'
+    exclude 'module-info.class'
     relocate 'javax.vecmath', "${project.group}.relocated.javax.vecmath"
-    finalizedBy 'reobfShadowJar'
+    // finalizedBy 'reobfShadowJar'
 }
+
+
+
+tasks.named("jar") {
+    enabled = false
+}
+
+def shadow = tasks.named("shadowJar")
+configurations.named("apiElements")    { outgoing.artifact(shadow) }
+configurations.named("runtimeElements"){ outgoing.artifact(shadow) }
 
 assemble.dependsOn shadowJar
 
