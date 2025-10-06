@@ -121,6 +121,14 @@ public class Vec3i {
         return subtract(other.x, other.y, other.z);
     }
 
+    public int lengthSquared() {
+        return x * x + y * y + z * z;
+    }
+
+    public double length() {
+        return Math.sqrt(lengthSquared());
+    }
+
     @Deprecated
     public long toLong() {
         return internal().toLong();
