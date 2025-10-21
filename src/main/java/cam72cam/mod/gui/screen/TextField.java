@@ -48,4 +48,9 @@ public class TextField {
         textfield.setVisible(visible);
         textfield.setEnabled(visible);
     }
+
+    /** Change the color of the drawn String by this text box*/
+    public void setTextColor(int color) {
+        textfield.setTextColor(color);
+    }
 }
