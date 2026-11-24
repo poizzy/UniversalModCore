@@ -77,5 +77,7 @@ public interface IModelBuilder {
 
         /** Finalizes the face for the builder to do post editions, like triangulation */
         void end();
+
+        void reset();
     }
 }

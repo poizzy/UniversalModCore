@@ -51,6 +51,8 @@ public class SimpleModelBuilder implements IModelBuilder {
     private boolean hasNormal = true;
     private boolean finished = false;
 
+    private final IFaceBuilder faceBuilder = new SimpleFaceBuilder();
+
     public SimpleModelBuilder(Identifier modelLoc, double scale, Collection<String> variants, ResourceCache.ResourceProvider input) {
         this.modelLoc = modelLoc;
         this.scale = scale;
@@ -142,7 +144,8 @@ public class SimpleModelBuilder implements IModelBuilder {
     @Override
     public IFaceBuilder newFace() {
         checkUnfinished();
-        return new SimpleFaceBuilder();
+        faceBuilder.reset();
+        return faceBuilder;
     }
 
     @Override
@@ -439,6 +442,11 @@ public class SimpleModelBuilder implements IModelBuilder {
                 materialByFace.add(currMaterial);
                 usedMaterials.add(currMaterial);
             }
+        }
+
+        @Override
+        public void reset() {
+            buffer.clear();
         }
     }
 }
